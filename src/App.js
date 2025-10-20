@@ -1,7 +1,7 @@
 // src/App.js
 import React, { useState, useEffect, useMemo } from 'react';
 import './App.css';
-
+import ResumeModal from './components/ResumeModal';
 import LoginCard from './components/LoginCard';
 
 function App() {
@@ -14,6 +14,7 @@ function App() {
   const [timer, setTimer] = useState(15);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false); // 🔥 Tambahkan state untuk modal
 
   // Ambil data dari localStorage saat pertama load
   useEffect(() => {
@@ -21,7 +22,23 @@ function App() {
     if (saved) {
       try {
         const state = JSON.parse(saved);
-        // Jika data valid, set state dan langsung login
+        // Jika data valid, tampilkan modal konfirmasi
+        if (state.questions && Array.isArray(state.questions) && state.questions.length > 0) {
+          setShowResumeModal(true); // 🔥 Tampilkan modal
+        }
+      } catch (e) {
+        console.error('Error parsing localStorage, clearing...', e);
+        localStorage.removeItem('quizState');
+      }
+    }
+  }, []);
+
+  // Fungsi untuk melanjutkan dari data sebelumnya
+  const resumeQuiz = () => {
+    const saved = localStorage.getItem('quizState');
+    if (saved) {
+      try {
+        const state = JSON.parse(saved);
         if (state.questions && Array.isArray(state.questions) && state.questions.length > 0) {
           setUsername(state.username || '');
           setLanguage(state.language || 'ID');
@@ -34,16 +51,24 @@ function App() {
           if (!state.showResult && state.timer > 0) {
             setIsTimerRunning(true);
           }
+          setShowResumeModal(false); // 🔥 Tutup modal
         } else {
-          // Jika tidak valid, hapus localStorage
           localStorage.removeItem('quizState');
+          setShowResumeModal(false);
         }
       } catch (e) {
         console.error('Error parsing localStorage, clearing...', e);
         localStorage.removeItem('quizState');
+        setShowResumeModal(false);
       }
     }
-  }, []);
+  };
+
+  // Fungsi untuk memulai ulang (hapus data lama)
+  const startNewQuiz = () => {
+    localStorage.removeItem('quizState');
+    setShowResumeModal(false);
+  };
 
   // 🔥 Simpan data ke localStorage saat window hampir ditutup
   useEffect(() => {
@@ -168,6 +193,26 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [timer, isTimerRunning, currentQuestionIndex, questions.length]);
+
+  // 🔥 Modal Konfirmasi Resume
+  const ResumeModal = () => {
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h3>Lanjutkan Kuis?</h3>
+          <p>Kamu sebelumnya sudah mengerjakan kuis. Apakah kamu ingin melanjutkan?</p>
+          <div className="modal-buttons">
+            <button className="modal-btn resume-btn" onClick={resumeQuiz}>
+              Lanjutkan
+            </button>
+            <button className="modal-btn start-btn" onClick={startNewQuiz}>
+              Mulai Ulang
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // 🔥 Pindahkan useMemo ke sini, sebelum if statement
   const QuizCardInternal = useMemo(() => {
@@ -314,6 +359,15 @@ function App() {
     };
   }, [language, username, questions, userAnswers, timer, showResult, currentQuestionIndex, handleLogout, resetQuiz, handleAnswerClick]);
 
+  // 🔥 Tampilkan modal jika showResumeModal = true
+  if (showResumeModal) {
+    return (
+      <div className="App">
+        <ResumeModal />
+      </div>
+    );
+  }
+
   // Jika belum login, tampilkan login
   if (!isLoggedIn) {
     return (
@@ -339,7 +393,16 @@ function App() {
   if (!currentQuestion) {
     return <div className="App">Memuat soal...</div>;
   }
-
+if (showResumeModal) {
+  return (
+    <div className="App">
+      <ResumeModal
+        onContinue={resumeQuiz}
+        onStartNew={startNewQuiz}
+      />
+    </div>
+  );
+}
   // Gunakan QuizCardInternal
   return (
     <div className="App">
