@@ -1,6 +1,5 @@
 // src/components/ResumeModal.jsx
 import React from 'react';
-import './ResumeModal.css';
 
 const ResumeModal = ({ onContinue, onStartNew }) => {
   return (
@@ -10,10 +9,10 @@ const ResumeModal = ({ onContinue, onStartNew }) => {
         <p>Kamu sebelumnya sudah mengerjakan kuis. Apakah kamu ingin melanjutkan?</p>
         <div className="modal-buttons">
           <button className="modal-btn resume-btn" onClick={onContinue}>
-            ✅ Lanjutkan
+             Lanjutkan
           </button>
           <button className="modal-btn start-btn" onClick={onStartNew}>
-            🔄 Mulai Ulang
+            Mulai Ulang
           </button>
         </div>
       </div>
