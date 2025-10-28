@@ -1,73 +1,44 @@
+// src/components/QuestionBox.jsx
 import React from 'react';
-import QuestionBox from './QuestionBox';
-import ResultBox from './ResultBox';
 
-const QuizCard = ({
-  language,
-  setLanguage,
-  handleLogout,
-  username,
-  userAnswers,
-  questions,
-  timer,
-  showResult,
-  currentQuestionIndex,
-  decodedQuestion,
-  handleAnswerClick,
-  resetQuiz,
-  currentQuestion // Terima currentQuestion dari App.js
-}) => {
+const QuestionBox = ({ question, userAnswers, currentQuestionIndex, handleAnswerClick, language, currentQuestion }) => {
   return (
-    <div className="quiz-card">
-      <div className="header">
-        <h2>Kuis OpenTDB</h2>
-        <div className="controls">
-          <button
-            className={`lang-btn ${language === 'ID' ? 'active' : ''}`}
-            onClick={() => setLanguage('ID')}
-          >
-            ID
-          </button>
-          <button
-            className={`lang-btn ${language === 'EN' ? 'active' : ''}`}
-            onClick={() => setLanguage('EN')}
-          >
-            EN
-          </button>
-          <button className="logout-btn" onClick={handleLogout}>
-            {language === 'ID' ? 'Logout' : 'Logout'}
-          </button>
-        </div>
+    <div className="question-box">
+      <div className="question">{question}</div>
+
+      <div className="options">
+        <button
+          className={`option-btn ${userAnswers[currentQuestionIndex] === 'True' ? 'selected' : ''}`}
+          onClick={() => handleAnswerClick('True')}
+          disabled={userAnswers[currentQuestionIndex] !== null}
+        >
+          {language === 'ID' ? 'Benar' : 'True'}
+        </button>
+        <button
+          className={`option-btn ${userAnswers[currentQuestionIndex] === 'False' ? 'selected' : ''}`}
+          onClick={() => handleAnswerClick('False')}
+          disabled={userAnswers[currentQuestionIndex] !== null}
+        >
+          {language === 'ID' ? 'Salah' : 'False'}
+        </button>
       </div>
 
-      <div className="user-info">
-        <div className="greeting">
-          {language === 'ID' ? `Halo, ${username}` : `Hello, ${username}`}
+      {userAnswers[currentQuestionIndex] !== null && currentQuestion && (
+        <div className="feedback">
+          {userAnswers[currentQuestionIndex] === currentQuestion.correct_answer ? (
+            <p style={{ color: '#4caf50' }}>{language === 'ID' ? '✔️ Jawaban benar!' : '✔️ Correct answer!'}</p>
+          ) : (
+            <p style={{ color: '#f44336' }}>
+              {language === 'ID'
+                ? `❌ Jawaban salah. Jawaban yang benar: ${currentQuestion.correct_answer}`
+                : `❌ Wrong answer. Correct answer: ${currentQuestion.correct_answer}`
+              }
+            </p>
+          )}
         </div>
-        <div className="stats">
-          <div>{language === 'ID' ? 'Terjawab:' : 'Answered:'} {userAnswers.filter(a => a !== null).length}/{questions.length}</div>
-          <div>{language === 'ID' ? 'Sisa Waktu:' : 'Time Left:'} 00:{timer < 10 ? '0' : ''}{timer}</div>
-        </div>
-      </div>
-
-      {showResult ? (
-        <ResultBox language={language} username={username} questions={questions} userAnswers={userAnswers} resetQuiz={resetQuiz} />
-      ) : (
-        <QuestionBox
-          decodedQuestion={decodedQuestion}
-          userAnswers={userAnswers}
-          currentQuestionIndex={currentQuestionIndex}
-          handleAnswerClick={handleAnswerClick}
-          language={language}
-          currentQuestion={currentQuestion} // Kirim ke QuestionBox
-        />
       )}
-
-      <button className="reset-btn" onClick={() => window.location.reload()}>
-        {language === 'ID' ? 'Reset' : 'Reset'}
-      </button>
     </div>
   );
 };
 
-export default QuizCard;
+export default QuestionBox;

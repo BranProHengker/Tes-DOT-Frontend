@@ -1,8 +1,11 @@
 // src/App.js
 import React, { useState, useEffect, useMemo } from 'react';
 import './App.css';
-import ResumeModal from './components/ResumeModal';
+
 import LoginCard from './components/LoginCard';
+import QuestionBox from './components/QuestionBox';
+import ResultBox from './components/ResultBox';
+import ResumeModal from './components/ResumeModal';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -14,17 +17,16 @@ function App() {
   const [timer, setTimer] = useState(15);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [showResumeModal, setShowResumeModal] = useState(false); // 🔥 Tambahkan state untuk modal
+  const [showResumeModal, setShowResumeModal] = useState(false);
 
-  // Ambil data dari localStorage saat pertama load
+  // Cek resume hanya saat komponen pertama kali mount
   useEffect(() => {
     const saved = localStorage.getItem('quizState');
     if (saved) {
       try {
         const state = JSON.parse(saved);
-        // Jika data valid, tampilkan modal konfirmasi
         if (state.questions && Array.isArray(state.questions) && state.questions.length > 0) {
-          setShowResumeModal(true); // 🔥 Tampilkan modal
+          setShowResumeModal(true);
         }
       } catch (e) {
         console.error('Error parsing localStorage, clearing...', e);
@@ -51,7 +53,7 @@ function App() {
           if (!state.showResult && state.timer > 0) {
             setIsTimerRunning(true);
           }
-          setShowResumeModal(false); // 🔥 Tutup modal
+          setShowResumeModal(false);
         } else {
           localStorage.removeItem('quizState');
           setShowResumeModal(false);
@@ -177,140 +179,45 @@ function App() {
     fetchQuestions();
   };
 
+  // 🔥 Perbaikan: Jika timer habis, tampilkan hasil
   useEffect(() => {
     let interval;
     if (isTimerRunning && timer > 0) {
       interval = setInterval(() => setTimer(timer - 1), 1000);
     } else if (timer === 0 && isTimerRunning) {
       setIsTimerRunning(false);
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-        setTimer(15);
-        setIsTimerRunning(true);
-      } else {
-        setShowResult(true);
-      }
+      setShowResult(true);
     }
     return () => clearInterval(interval);
-  }, [timer, isTimerRunning, currentQuestionIndex, questions.length]);
+  }, [timer, isTimerRunning]);
 
-  // 🔥 Modal Konfirmasi Resume
-  const ResumeModal = () => {
-    return (
-      <div className="modal-overlay">
-        <div className="modal-content">
-          <h3>Lanjutkan Kuis?</h3>
-          <p>Kamu sebelumnya sudah mengerjakan kuis. Apakah kamu ingin melanjutkan?</p>
-          <div className="modal-buttons">
-            <button className="modal-btn resume-btn" onClick={resumeQuiz}>
-              Lanjutkan
-            </button>
-            <button className="modal-btn start-btn" onClick={startNewQuiz}>
-              Mulai Ulang
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // 🔥 Tambahkan event listener keyboard (T/F)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (showResult) return;
+      if (userAnswers[currentQuestionIndex] !== null) return;
+
+      if (e.key === 't' || e.key === 'T') {
+        handleAnswerClick('True');
+      } else if (e.key === 'f' || e.key === 'F') {
+        handleAnswerClick('False');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showResult, userAnswers, currentQuestionIndex, handleAnswerClick]);
 
   // 🔥 Pindahkan useMemo ke sini, sebelum if statement
   const QuizCardInternal = useMemo(() => {
     return () => {
-      // Hitung skor untuk result
-      const calculateScore = () => {
-        let correct = 0;
-        let wrong = 0;
-        questions.forEach((q, i) => {
-          if (q.correct_answer === userAnswers[i]) {
-            correct++;
-          } else {
-            wrong++;
-          }
-        });
-        return { correct, wrong, total: questions.length };
-      };
-
-      // ResultBox Internal
-      const ResultBoxInternal = () => {
-        const score = calculateScore();
-
-        return (
-          <div className="result-box">
-            <h3>{language === 'ID' ? 'Hasil Kuis' : 'Quiz Result'}</h3>
-            <p>{language === 'ID' ? 'Bagus kerjaanmu,' : 'Good job,'} {username}!</p>
-
-            <div className="stats-grid">
-              <div className="stat-item">
-                <div className="label">{language === 'ID' ? 'Total Soal' : 'Total Questions'}</div>
-                <div className="value">{score.total}</div>
-              </div>
-              <div className="stat-item">
-                <div className="label">{language === 'ID' ? 'Terjawab' : 'Answered'}</div>
-                <div className="value">{score.correct}</div>
-              </div>
-              <div className="stat-item">
-                <div className="label">{language === 'ID' ? 'Benar' : 'Correct'}</div>
-                <div className="value">{score.correct}</div>
-              </div>
-              <div className="stat-item">
-                <div className="label">{language === 'ID' ? 'Salah' : 'Wrong'}</div>
-                <div className="value">{score.wrong}</div>
-              </div>
-            </div>
-
-            <button className="retry-btn" onClick={resetQuiz}>
-              {language === 'ID' ? 'Coba Lagi' : 'Try Again'}
-            </button>
-          </div>
-        );
-      };
-
-      // QuestionBox Internal
-      const QuestionBoxInternal = () => {
-        const currentQuestion = questions[currentQuestionIndex];
-        const decodedQuestion = currentQuestion
-          ? new DOMParser().parseFromString(currentQuestion.question, 'text/html').body.textContent
-          : '';
-
-        return (
-          <div className="question-box">
-            <div className="question">{decodedQuestion}</div>
-
-            <div className="options">
-              <button
-                className={`option-btn ${userAnswers[currentQuestionIndex] === 'True' ? 'selected' : ''}`}
-                onClick={() => handleAnswerClick('True')}
-                disabled={userAnswers[currentQuestionIndex] !== null}
-              >
-                {language === 'ID' ? 'Benar' : 'True'}
-              </button>
-              <button
-                className={`option-btn ${userAnswers[currentQuestionIndex] === 'False' ? 'selected' : ''}`}
-                onClick={() => handleAnswerClick('False')}
-                disabled={userAnswers[currentQuestionIndex] !== null}
-              >
-                {language === 'ID' ? 'Salah' : 'False'}
-              </button>
-            </div>
-
-            {userAnswers[currentQuestionIndex] !== null && currentQuestion && (
-              <div className="feedback">
-                {userAnswers[currentQuestionIndex] === currentQuestion.correct_answer ? (
-                  <p style={{ color: '#4caf50' }}>{language === 'ID' ? '✔️ Jawaban benar!' : '✔️ Correct answer!'}</p>
-                ) : (
-                  <p style={{ color: '#f44336' }}>
-                    {language === 'ID'
-                      ? `❌ Jawaban salah. Jawaban yang benar: ${currentQuestion.correct_answer}`
-                      : `❌ Wrong answer. Correct answer: ${currentQuestion.correct_answer}`
-                    }
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      };
+      const currentQuestion = questions[currentQuestionIndex];
+      const decodedQuestion = currentQuestion
+        ? new DOMParser().parseFromString(currentQuestion.question, 'text/html').body.textContent
+        : '';
 
       return (
         <div className="quiz-card">
@@ -346,9 +253,22 @@ function App() {
           </div>
 
           {showResult ? (
-            <ResultBoxInternal />
+            <ResultBox
+              language={language}
+              username={username}
+              questions={questions}
+              userAnswers={userAnswers}
+              resetQuiz={resetQuiz}
+            />
           ) : (
-            <QuestionBoxInternal />
+            <QuestionBox
+              question={decodedQuestion}
+              userAnswers={userAnswers}
+              currentQuestionIndex={currentQuestionIndex}
+              handleAnswerClick={handleAnswerClick}
+              language={language}
+              currentQuestion={currentQuestion}
+            />
           )}
 
           <button className="reset-btn" onClick={() => window.location.reload()}>
@@ -363,7 +283,10 @@ function App() {
   if (showResumeModal) {
     return (
       <div className="App">
-        <ResumeModal />
+        <ResumeModal
+          onContinue={resumeQuiz}
+          onStartNew={startNewQuiz}
+        />
       </div>
     );
   }
@@ -393,16 +316,7 @@ function App() {
   if (!currentQuestion) {
     return <div className="App">Memuat soal...</div>;
   }
-if (showResumeModal) {
-  return (
-    <div className="App">
-      <ResumeModal
-        onContinue={resumeQuiz}
-        onStartNew={startNewQuiz}
-      />
-    </div>
-  );
-}
+
   // Gunakan QuizCardInternal
   return (
     <div className="App">
