@@ -186,6 +186,7 @@ function App() {
       interval = setInterval(() => setTimer(timer - 1), 1000);
     } else if (timer === 0 && isTimerRunning) {
       setIsTimerRunning(false);
+      // 🔥 Jika timer habis, langsung tampilkan hasil
       setShowResult(true);
     }
     return () => clearInterval(interval);
@@ -247,7 +248,8 @@ function App() {
               {language === 'ID' ? `Halo, ${username}` : `Hello, ${username}`}
             </div>
             <div className="stats">
-              <div>{language === 'ID' ? 'Terjawab:' : 'Answered:'} {Array.isArray(userAnswers) ? userAnswers.filter(a => a !== null).length : 0}/{questions.length}</div>
+              {/* 🔥 Perbaikan: Selalu hitung dari userAnswers */}
+              <div>{language === 'ID' ? 'Terjawab:' : 'Answered:'} {userAnswers.filter(a => a !== null).length}/{questions.length}</div>
               <div>{language === 'ID' ? 'Sisa Waktu:' : 'Time Left:'} 00:{timer < 10 ? '0' : ''}{timer}</div>
             </div>
           </div>

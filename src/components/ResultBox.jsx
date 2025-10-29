@@ -1,28 +1,42 @@
+// src/components/ResultBox.jsx
 import React from 'react';
 import StatsGrid from './StatsGrid';
 
 const ResultBox = ({ language, username, questions, userAnswers, resetQuiz }) => {
-  // 🔥 Pastikan questions ada
-  if (!questions || !Array.isArray(questions)) {
-    return <div>Memuat hasil...</div>;
-  }
+  // 🔥 Perbaikan: Hitung jawaban benar, salah, dan terjawab
+  const calculateScore = () => {
+    let correct = 0;
+    let wrong = 0;
+    let answered = 0;
 
-  let correct = 0;
-  let wrong = 0;
-  questions.forEach((q, i) => {
-    if (q.correct_answer === userAnswers[i]) {
-      correct++;
-    } else {
-      wrong++;
-    }
-  });
+    questions.forEach((q, i) => {
+      if (userAnswers[i] !== null) {
+        answered++;
+        if (q.correct_answer === userAnswers[i]) {
+          correct++;
+        } else {
+          wrong++;
+        }
+      }
+    });
+
+    return { correct, wrong, answered, total: questions.length };
+  };
+
+  const score = calculateScore();
 
   return (
     <div className="result-box">
       <h3>{language === 'ID' ? 'Hasil Kuis' : 'Quiz Result'}</h3>
       <p>{language === 'ID' ? 'Bagus kerjaanmu,' : 'Good job,'} {username}!</p>
 
-      <StatsGrid correct={correct} wrong={wrong} total={questions.length} language={language} />
+      <StatsGrid
+        correct={score.correct}
+        wrong={score.wrong}
+        answered={score.answered}
+        total={score.total}
+        language={language}
+      />
 
       <button className="retry-btn" onClick={resetQuiz}>
         {language === 'ID' ? 'Coba Lagi' : 'Try Again'}
